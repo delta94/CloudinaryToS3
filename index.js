@@ -49,7 +49,6 @@ const uploadImage = (uploadFilePath, fileName) =>
         if (error) {
           return reject(error);
         }
-        console.log(result.Location);
         return resolve(result.Location);
       }
     );
