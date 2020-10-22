@@ -13,6 +13,7 @@
     "aws-sdk": "^2.776.0",
     "cloudinary": "^1.23.0",
     "dotenv": "^8.2.0",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "throat": "^5.0.0"
   }
 }

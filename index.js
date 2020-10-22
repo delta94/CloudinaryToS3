@@ -4,11 +4,12 @@ require('dotenv').config();
 const fs = require('fs');
 const AWS = require('aws-sdk');
 const path = require('path');
+const throat = require('throat');
 
 const {
-  CLOUD_NAME,
-  API_KEY,
-  API_SECRET,
+  CLOUDINARY_NAME,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
   AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY,
   AWS_DEFAULT_REGION,
@@ -16,18 +17,10 @@ const {
 } = process.env;
 
 cloudinary.config({
-  cloud_name: CLOUD_NAME,
-  api_key: API_KEY,
-  api_secret: API_SECRET,
+  cloud_name: CLOUDINARY_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
 });
-
-function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
 
 const downloadImage = (uri, filename) =>
   new Promise((resolve, reject) => {
@@ -37,7 +30,7 @@ const downloadImage = (uri, filename) =>
       .on('error', reject);
   });
 
-const uploadImage = (uploadFilePath) =>
+const uploadImage = (uploadFilePath, fileName) =>
   new Promise((resolve, reject) => {
     const s3 = new AWS.S3({
       accessKeyId: AWS_ACCESS_KEY_ID,
@@ -48,7 +41,7 @@ const uploadImage = (uploadFilePath) =>
       {
         ACL: 'public-read',
         Bucket: S3_BUCKET_NAME,
-        Key: uuidv4() + path.extname(uploadFilePath),
+        Key: fileName + path.extname(uploadFilePath),
         Body: fs.createReadStream(uploadFilePath),
       },
       async (error, result) => {
@@ -56,10 +49,17 @@ const uploadImage = (uploadFilePath) =>
         if (error) {
           return reject(error);
         }
+        console.log(result.Location);
         return resolve(result.Location);
       }
     );
   });
+
+const uploadImageFromCloudinaryToS3 = async (image) => {
+  const uploadFilePath = `${image['asset_id']}.png`;
+  await downloadImage(image.url, uploadFilePath);
+  uploadImage(uploadFilePath, image['asset_id']);
+};
 
 const uploadAllImagesFromCloudinaryToS3 = async () => {
   try {
@@ -67,11 +67,7 @@ const uploadAllImagesFromCloudinaryToS3 = async () => {
       resource_type: 'image',
     });
     await Promise.all(
-      res.resources.map(async (image) => {
-        const uploadFilePath = `${image['asset_id']}.png`;
-        await downloadImage(image.url, uploadFilePath);
-        uploadImage(uploadFilePath);
-      })
+      res.resources.map(throat(15, uploadImageFromCloudinaryToS3))
     );
   } catch (error) {
     console.error(error);
