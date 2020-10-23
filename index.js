@@ -57,12 +57,13 @@ const uploadImage = (uploadFilePath, fileName) =>
 const uploadImageFromCloudinaryToS3 = async (image) => {
   const uploadFilePath = `${image['asset_id']}.png`;
   await downloadImage(image.url, uploadFilePath);
-  uploadImage(uploadFilePath, image['asset_id']);
+  uploadImage(uploadFilePath, image['public_id']);
 };
 
 const uploadAllImagesFromCloudinaryToS3 = async () => {
   try {
     let next_cursor;
+    let counter = 0;
     do {
       const res = await cloudinary.v2.api.resources({
         resource_type: 'image',
@@ -71,8 +72,10 @@ const uploadAllImagesFromCloudinaryToS3 = async () => {
       });
       next_cursor = res.next_cursor;
       await Promise.all(
-        res.resources.map(throat(15, uploadImageFromCloudinaryToS3))
+        res.resources.map(throat(50, uploadImageFromCloudinaryToS3))
       );
+      counter += res.resources.length;
+      console.log(`${counter} item done`);
     } while (next_cursor);
   } catch (error) {
     console.error(error);
