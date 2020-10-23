@@ -30,7 +30,7 @@ const downloadImage = (uri, filename) =>
       .on('error', reject);
   });
 
-const uploadImage = (uploadFilePath, fileName) =>
+const uploadImage = (uploadFilePath) =>
   new Promise((resolve, reject) => {
     const s3 = new AWS.S3({
       accessKeyId: AWS_ACCESS_KEY_ID,
