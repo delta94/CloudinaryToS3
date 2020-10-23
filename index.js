@@ -62,12 +62,18 @@ const uploadImageFromCloudinaryToS3 = async (image) => {
 
 const uploadAllImagesFromCloudinaryToS3 = async () => {
   try {
-    const res = await cloudinary.v2.api.resources({
-      resource_type: 'image',
-    });
-    await Promise.all(
-      res.resources.map(throat(15, uploadImageFromCloudinaryToS3))
-    );
+    let next_cursor;
+    do {
+      const res = await cloudinary.v2.api.resources({
+        resource_type: 'image',
+        max_results: 500,
+        next_cursor,
+      });
+      next_cursor = res.next_cursor;
+      await Promise.all(
+        res.resources.map(throat(15, uploadImageFromCloudinaryToS3))
+      );
+    } while (next_cursor);
   } catch (error) {
     console.error(error);
   }
