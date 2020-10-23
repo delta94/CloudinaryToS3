@@ -41,7 +41,7 @@ const uploadImage = (uploadFilePath, fileName) =>
       {
         ACL: 'public-read',
         Bucket: S3_BUCKET_NAME,
-        Key: fileName + path.extname(uploadFilePath),
+        Key: fileName,
         Body: fs.createReadStream(uploadFilePath),
       },
       async (error, result) => {
@@ -49,15 +49,22 @@ const uploadImage = (uploadFilePath, fileName) =>
         if (error) {
           return reject(error);
         }
+        console.log(result.Location);
         return resolve(result.Location);
       }
     );
   });
 
-const uploadImageFromCloudinaryToS3 = async (image) => {
-  const uploadFilePath = `${image['asset_id']}.png`;
-  await downloadImage(image.url, uploadFilePath);
-  uploadImage(uploadFilePath, image['public_id']);
+const uploadImageFromCloudinaryToS3 = async ({
+  url,
+  asset_id,
+  format,
+  public_id,
+}) => {
+  const uploadFilePath = `${asset_id}.${format}`;
+  const uploadFileName = `${public_id}.${format}`;
+  await downloadImage(url, uploadFilePath);
+  uploadImage(uploadFilePath, uploadFileName);
 };
 
 const uploadAllImagesFromCloudinaryToS3 = async () => {
