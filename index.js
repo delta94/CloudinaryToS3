@@ -57,7 +57,7 @@ const uploadImage = (uploadFilePath) =>
 const uploadImageFromCloudinaryToS3 = async ({ url, format, public_id }) => {
   const uploadFilePath = `${public_id}.${format}`;
   await downloadImage(url, uploadFilePath);
-  uploadImage(uploadFilePath);
+  await uploadImage(uploadFilePath);
 };
 
 const uploadAllImagesFromCloudinaryToS3 = async () => {
